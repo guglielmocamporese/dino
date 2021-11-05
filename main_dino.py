@@ -33,6 +33,8 @@ from torchvision import models as torchvision_models
 import utils
 import vision_transformer as vits
 from vision_transformer import DINOHead
+from datasets.dataloaders import get_datasets
+from datasets import constants
 
 torchvision_archs = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
@@ -117,15 +119,17 @@ def get_args_parser():
         Used for small local view cropping of multi-crop.""")
 
     # Misc
-    parser.add_argument('--data_path', default='/path/to/imagenet/train/', type=str,
+    parser.add_argument('--data_path', default='./data', type=str,
         help='Please specify path to the ImageNet training data.')
-    parser.add_argument('--output_dir', default=".", type=str, help='Path to save logs and checkpoints.')
+    parser.add_argument('--output_dir', default="./tmp", type=str, help='Path to save logs and checkpoints.')
     parser.add_argument('--saveckp_freq', default=20, type=int, help='Save checkpoint every x epochs.')
     parser.add_argument('--seed', default=0, type=int, help='Random seed.')
     parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
     parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up
         distributed training; see https://pytorch.org/docs/stable/distributed.html""")
     parser.add_argument("--local_rank", default=0, type=int, help="Please ignore and do not set this argument.")
+    parser.add_argument("--dataset", type=str, help="Dataset used.", 
+                        choices=["imagenet", "cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet"])
     return parser
 
 
@@ -138,11 +142,20 @@ def train_dino(args):
 
     # ============ preparing data ... ============
     transform = DataAugmentationDINO(
+        args.dataset,
         args.global_crops_scale,
         args.local_crops_scale,
         args.local_crops_number,
     )
-    dataset = datasets.ImageFolder(args.data_path, transform=transform)
+    transform_dict = {
+        'train': transform,
+        'train_aug': None,
+        'validation': None,
+        'test': None,
+    }
+    #dataset = datasets.ImageFolder(args.data_path, transform=transform)
+    #dataset = datasets.CIFAR10(args.data_path, transform=transform, download=True)
+    dataset = get_datasets(args, transform=transform_dict)['train']
     sampler = torch.utils.data.DistributedSampler(dataset, shuffle=True)
     data_loader = torch.utils.data.DataLoader(
         dataset,
@@ -417,7 +430,7 @@ class DINOLoss(nn.Module):
 
 
 class DataAugmentationDINO(object):
-    def __init__(self, global_crops_scale, local_crops_scale, local_crops_number):
+    def __init__(self, dataset, global_crops_scale, local_crops_scale, local_crops_number):
         flip_and_color_jitter = transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomApply(
@@ -428,7 +441,7 @@ class DataAugmentationDINO(object):
         ])
         normalize = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.Normalize(*constants.NORMALIZATION[dataset])
         ])
 
         # first global crop
@@ -467,5 +480,6 @@ class DataAugmentationDINO(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DINO', parents=[get_args_parser()])
     args = parser.parse_args()
+    args.output_dir = os.path.join(args.output_dir, args.dataset)
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     train_dino(args)

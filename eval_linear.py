@@ -26,6 +26,7 @@ from torchvision import models as torchvision_models
 
 import utils
 import vision_transformer as vits
+from datasets.dataloaders import get_datasets
 
 
 def eval_linear(args):
@@ -52,7 +53,7 @@ def eval_linear(args):
         print(f"Unknow architecture: {args.arch}")
         sys.exit(1)
     model.cuda()
-    model.eval()
+    #model.eval()
     # load weights to evaluate
     utils.load_pretrained_weights(model, args.pretrained_weights, args.checkpoint_key, args.arch, args.patch_size)
     print(f"Model {args.arch} built.")
@@ -62,13 +63,26 @@ def eval_linear(args):
     linear_classifier = nn.parallel.DistributedDataParallel(linear_classifier, device_ids=[args.gpu])
 
     # ============ preparing data ... ============
+    #val_transform = pth_transforms.Compose([
+    #    pth_transforms.Resize(256, interpolation=3),
+    #    pth_transforms.CenterCrop(224),
+    #    pth_transforms.ToTensor(),
+    #    pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+    #])
     val_transform = pth_transforms.Compose([
-        pth_transforms.Resize(256, interpolation=3),
-        pth_transforms.CenterCrop(224),
+
+        pth_transforms.Resize(256, interpolation=3) if args.dataset in ['imagenet', 'caltech256', 'flower102', 'oxford_pet'] else lambda x: x,
+        pth_transforms.CenterCrop(224) if args.dataset in ['imagenet', 'caltech256', 'flower102', 'oxford_pet'] else lambda x: x,
+
+        pth_transforms.Resize(224) if args.dataset in ['cifar10', 'cifar100', 'tiny_imagenet'] else lambda x: x,
+
         pth_transforms.ToTensor(),
-        pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
     ])
-    dataset_val = datasets.ImageFolder(os.path.join(args.data_path, "val"), transform=val_transform)
+    val_transform_dict = {'train': None, 'train_aug': None, 'validation': val_transform, 'test': None}
+    #datasets.ImageFolder(os.path.join(args.data_path, "val"), transform=val_transform)
+    #dataset_val = datasets.CIFAR10(args.data_path, train=False, download=True, transform=val_transform) 
+    dataset_val = get_datasets(args, transform=val_transform_dict)['validation']
     val_loader = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=args.batch_size_per_gpu,
@@ -86,9 +100,12 @@ def eval_linear(args):
         pth_transforms.RandomResizedCrop(224),
         pth_transforms.RandomHorizontalFlip(),
         pth_transforms.ToTensor(),
-        pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset]),
     ])
-    dataset_train = datasets.ImageFolder(os.path.join(args.data_path, "train"), transform=train_transform)
+    train_transform_dict = {'train': train_transform, 'train_aug': None, 'validation': None, 'test': None}
+    #datasets.ImageFolder(os.path.join(args.data_path, "train"), transform=train_transform)
+    #dataset_train = datasets.CIFAR10(args.data_path, train=True, download=True, transform=train_transform) 
+    dataset_train = get_datasets(args, transform=train_transform_dict)['train']
     sampler = torch.utils.data.distributed.DistributedSampler(dataset_train)
     train_loader = torch.utils.data.DataLoader(
         dataset_train,
@@ -161,15 +178,23 @@ def train(model, linear_classifier, optimizer, loader, epoch, n, avgpool):
         target = target.cuda(non_blocking=True)
 
         # forward
-        with torch.no_grad():
-            if "vit" in args.arch:
-                intermediate_output = model.get_intermediate_layers(inp, n)
-                output = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
-                if avgpool:
-                    output = torch.cat((output.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
-                    output = output.reshape(output.shape[0], -1)
-            else:
-                output = model(inp)
+        #with torch.no_grad():
+        #    if "vit" in args.arch:
+        #        intermediate_output = model.get_intermediate_layers(inp, n)
+        #        output = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
+        #        if avgpool:
+        #            output = torch.cat((output.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
+        #            output = output.reshape(output.shape[0], -1)
+        #    else:
+        #        output = model(inp)
+        if "vit" in args.arch:
+            intermediate_output = model.get_intermediate_layers(inp, n)
+            output = torch.cat([x[:, 0] for x in intermediate_output], dim=-1)
+            if avgpool:
+                output = torch.cat((output.unsqueeze(-1), torch.mean(intermediate_output[-1][:, 1:], dim=1).unsqueeze(-1)), dim=-1)
+                output = output.reshape(output.shape[0], -1)
+        else:
+            output = model(inp)
         output = linear_classifier(output)
 
         # compute cross entropy loss
@@ -271,11 +296,11 @@ if __name__ == '__main__':
     parser.add_argument("--dist_url", default="env://", type=str, help="""url used to set up
         distributed training; see https://pytorch.org/docs/stable/distributed.html""")
     parser.add_argument("--local_rank", default=0, type=int, help="Please ignore and do not set this argument.")
-    parser.add_argument('--data_path', default='/path/to/imagenet/', type=str)
+    parser.add_argument('--data_path', default='./data', type=str)
     parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
     parser.add_argument('--val_freq', default=1, type=int, help="Epoch frequency for validation.")
     parser.add_argument('--output_dir', default=".", help='Path to save logs and checkpoints')
-    parser.add_argument('--num_labels', default=1000, type=int, help='Number of labels for linear classifier')
+    parser.add_argument('--num_labels', default=10, type=int, help='Number of labels for linear classifier')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
     args = parser.parse_args()
     eval_linear(args)
