@@ -1,36 +1,24 @@
-"""
-Each dataset returns:
-    images: torch tensor of shape [C, H, W], the image.
-    labels: torch of shape [1], class of the image.
-    relations: torch tensor of shape [NUM_PATCHES, NUM_PATCHES], the spatial relations of the patches.
-"""
-
-
-##################################################
-# Imports
-##################################################
-
 import os
 import subprocess
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-from torchvision.datasets import VOCDetection, CIFAR10, CIFAR100
+from torchvision.datasets import CIFAR10, CIFAR100
 import torch
 import math
 import torch.nn.functional as F
 import tarfile
+from torchvision.datasets import ImageFolder
 
 # Custom
-#from datasets.encode_locations import create_connectivity_matrix, create_dist_matrix, create_angle_matrix, SSLSignal
-from datasets.transforms import get_transforms, transform_enc
+from datasets.transforms import get_transforms
 from datasets.tiny_imagenet import TinyImagenetDataset
 from datasets.caltech import Caltech256
 from datasets.flower import Flower102
 from datasets.imagenet import ImageNetDataset
 from datasets.oxford_pet import OxfordPet
-#import utils
 
-def get_datasets(args, transform='default', target_transform='default', patch_transform='default'):
+
+def get_datasets(args, transform='default', target_transform='default'):
     """
     Return the PyTorch datasets.
     """
@@ -105,34 +93,6 @@ def get_datasets(args, transform='default', target_transform='default', patch_tr
         'train': ds_train,
         'train_aug': ds_train_aug,
         'validation': ds_validation,
-        'test': None,
+        'test': ds_test,
     }
     return dss
-
-def get_dataloaders(args):
-    """
-    Return the PyTorch dataloaders.
-    """
-
-    # Datasets
-    transform = 'default'
-    target_transform = 'default'
-    if args.backbone in ['vit', 'simsiam']:
-        patch_transform = 'default'
-    else:
-        patch_transform = {'train': None, 'train_aug': None, 'validation': None, 'test': None}
-    dss = get_datasets(args, transform=transform, target_transform=target_transform, patch_transform=patch_transform)
-
-    # Dataloaders
-    dl_args = {
-        'batch_size': args.batch_size,
-        'num_workers': args.num_workers,
-        'pin_memory': True,
-    }
-    dls = {
-        'train': DataLoader(dss['train'], shuffle=False, **dl_args),
-        'train_aug': DataLoader(dss['train_aug'], shuffle=True, **dl_args),
-        'validation': DataLoader(dss['validation'], shuffle=False, **dl_args),
-        'test':  None,
-    }
-    return dls

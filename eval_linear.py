@@ -63,25 +63,13 @@ def eval_linear(args):
     linear_classifier = nn.parallel.DistributedDataParallel(linear_classifier, device_ids=[args.gpu])
 
     # ============ preparing data ... ============
-    #val_transform = pth_transforms.Compose([
-    #    pth_transforms.Resize(256, interpolation=3),
-    #    pth_transforms.CenterCrop(224),
-    #    pth_transforms.ToTensor(),
-    #    pth_transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    #])
     val_transform = pth_transforms.Compose([
-
-        pth_transforms.Resize(256, interpolation=3) if args.dataset in ['imagenet', 'caltech256', 'flower102', 'oxford_pet'] else lambda x: x,
-        pth_transforms.CenterCrop(224) if args.dataset in ['imagenet', 'caltech256', 'flower102', 'oxford_pet'] else lambda x: x,
-
-        pth_transforms.Resize(224) if args.dataset in ['cifar10', 'cifar100', 'tiny_imagenet'] else lambda x: x,
-
+        pth_transforms.Resize(256, interpolation=3)
+        pth_transforms.CenterCrop(224)
         pth_transforms.ToTensor(),
         pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
     ])
     val_transform_dict = {'train': None, 'train_aug': None, 'validation': val_transform, 'test': None}
-    #datasets.ImageFolder(os.path.join(args.data_path, "val"), transform=val_transform)
-    #dataset_val = datasets.CIFAR10(args.data_path, train=False, download=True, transform=val_transform) 
     dataset_val = get_datasets(args, transform=val_transform_dict)['validation']
     val_loader = torch.utils.data.DataLoader(
         dataset_val,
@@ -103,8 +91,6 @@ def eval_linear(args):
         pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset]),
     ])
     train_transform_dict = {'train': train_transform, 'train_aug': None, 'validation': None, 'test': None}
-    #datasets.ImageFolder(os.path.join(args.data_path, "train"), transform=train_transform)
-    #dataset_train = datasets.CIFAR10(args.data_path, train=True, download=True, transform=train_transform) 
     dataset_train = get_datasets(args, transform=train_transform_dict)['train']
     sampler = torch.utils.data.distributed.DistributedSampler(dataset_train)
     train_loader = torch.utils.data.DataLoader(
