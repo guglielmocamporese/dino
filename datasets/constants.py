@@ -9,3 +9,11 @@ NORMALIZATION = {
     'flower102': [(0.4727, 0.3996, 0.3193), (0.2966, 0.2472, 0.2813)],
     'oxford_pet': [(0.4805, 0.4453, 0.3953), (0.2603, 0.2545, 0.2618)],
 }
+NUM_CLASSES = {
+    'imagenet': 1000,
+    'cifar10': 10,
+    'cifar100': 100,
+    'tiny_imagenet': 200,
+    'flower102': 102,
+    'oxford_pet': 37,
+}

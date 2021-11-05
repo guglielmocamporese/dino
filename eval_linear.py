@@ -27,6 +27,7 @@ from torchvision import models as torchvision_models
 import utils
 import vision_transformer as vits
 from datasets.dataloaders import get_datasets
+from datasets import constants
 
 
 def eval_linear(args):
@@ -64,8 +65,8 @@ def eval_linear(args):
 
     # ============ preparing data ... ============
     val_transform = pth_transforms.Compose([
-        pth_transforms.Resize(256, interpolation=3)
-        pth_transforms.CenterCrop(224)
+        pth_transforms.Resize(256, interpolation=3),
+        pth_transforms.CenterCrop(224),
         pth_transforms.ToTensor(),
         pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
     ])
@@ -285,8 +286,12 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='./data', type=str)
     parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
     parser.add_argument('--val_freq', default=1, type=int, help="Epoch frequency for validation.")
-    parser.add_argument('--output_dir', default=".", help='Path to save logs and checkpoints')
+    parser.add_argument('--output_dir', default="./tmp", help='Path to save logs and checkpoints')
     parser.add_argument('--num_labels', default=10, type=int, help='Number of labels for linear classifier')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
+    parser.add_argument('--dataset', type=str, help='Dataset used.', 
+                        choices=["cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet", "imagenet"])
     args = parser.parse_args()
+    args.num_labels = constants.NUM_CLASSES[args.dataset]
+    args.output_dir = os.path.join(args.output_dir, args.dataset)
     eval_linear(args)
