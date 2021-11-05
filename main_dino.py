@@ -441,16 +441,18 @@ class DataAugmentationDINO(object):
         ])
         gray2rgb_ifneeded = lambda x: x.repeat(3, 1, 1) if x.shape[0] == 1 else x
         rgba2rgb_ifneeded = lambda x: x[:3] if x.shape[0] == 4 else x
+        gray2rgb_ifneeded_pil = lambda x: x.convert('RGB') if x.mode == 'L' else x,
+        rgba2rgb_ifneeded_pil = lambda x: x.convert('RGB') if x.mode == 'RGBA' else x,
         identity = lambda x: x
         normalize = transforms.Compose([
             transforms.ToTensor(),
-            gray2rgb_ifneeded if args.dataset in ['tiny_imagenet', 'oxford_pet'] else identity,
-            rgba2rgb_ifneeded if args.dataset in ['tiny_imagenet', 'oxford_pet'] else identity,
             transforms.Normalize(*constants.NORMALIZATION[dataset])
         ])
 
         # first global crop
         self.global_transfo1 = transforms.Compose([
+            gray2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+            rgba2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
             transforms.RandomResizedCrop(224, scale=global_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             utils.GaussianBlur(1.0),
@@ -458,6 +460,8 @@ class DataAugmentationDINO(object):
         ])
         # second global crop
         self.global_transfo2 = transforms.Compose([
+            gray2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+            rgba2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
             transforms.RandomResizedCrop(224, scale=global_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             utils.GaussianBlur(0.1),
@@ -467,6 +471,8 @@ class DataAugmentationDINO(object):
         # transformation for the local small crops
         self.local_crops_number = local_crops_number
         self.local_transfo = transforms.Compose([
+            gray2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+            rgba2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
             transforms.RandomResizedCrop(96, scale=local_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             utils.GaussianBlur(p=0.5),
