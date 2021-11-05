@@ -31,6 +31,10 @@ import torch
 from torch import nn
 import torch.distributed as dist
 from PIL import ImageFilter, ImageOps
+import tarfile
+import requests
+import logging
+from tqdm import tqdm
 
 
 class GaussianBlur(object):
@@ -851,3 +855,33 @@ def multi_scale(samples, model):
     v /= 3
     v /= v.norm()
     return v
+
+def download_file(url, fname):
+    folder = os.path.dirname(fname)
+    if not os.path.exists(folder) and (len(folder) > 0):
+        os.makedirs(folder)
+    resp = requests.get(url, stream=True)
+    total = int(resp.headers.get('content-length', 0))
+    with open(fname, 'wb') as file, tqdm(
+        desc=fname,
+        total=total,
+        unit='iB',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as bar:
+        for data in resp.iter_content(chunk_size=1024):
+            size = file.write(data)
+            bar.update(size)
+
+def extract_tar(tarpath, dest=None):
+    """
+    Extract a tar file (".tar", ".tar.gz") in dest. If dest is None the tar
+    will be extracted in the same folder of the tarpath.
+    """
+    if dest is None:
+        folder = os.path.dirname(tarpath)
+        dest = folder if len(folder) > 0 else './'
+    tar = tarfile.open(tarpath)
+    tar.extractall(dest)
+    tar.close()
+    logging.info(f'Extracted tar to {folder}')
