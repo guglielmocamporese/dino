@@ -64,10 +64,15 @@ def eval_linear(args):
     linear_classifier = nn.parallel.DistributedDataParallel(linear_classifier, device_ids=[args.gpu])
 
     # ============ preparing data ... ============
+    gray2rgb_ifneeded = lambda x: x.repeat(3, 1, 1) if x.shape[0] == 1 else x
+    rgba2rgb_ifneeded = lambda x: x[:3] if x.shape[0] == 4 else x
+    identity = lambda x: x
     val_transform = pth_transforms.Compose([
         pth_transforms.Resize(256, interpolation=3),
         pth_transforms.CenterCrop(224),
         pth_transforms.ToTensor(),
+        gray2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
+        rgba2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
         pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
     ])
     val_transform_dict = {'train': None, 'train_aug': None, 'validation': val_transform, 'test': None}
@@ -89,6 +94,8 @@ def eval_linear(args):
         pth_transforms.RandomResizedCrop(224),
         pth_transforms.RandomHorizontalFlip(),
         pth_transforms.ToTensor(),
+        gray2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
+        rgba2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
         pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset]),
     ])
     train_transform_dict = {'train': train_transform, 'train_aug': None, 'validation': None, 'test': None}

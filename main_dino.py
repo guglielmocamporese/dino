@@ -439,8 +439,13 @@ class DataAugmentationDINO(object):
             ),
             transforms.RandomGrayscale(p=0.2),
         ])
+        gray2rgb_ifneeded = lambda x: x.repeat(3, 1, 1) if x.shape[0] == 1 else x
+        rgba2rgb_ifneeded = lambda x: x[:3] if x.shape[0] == 4 else x
+        identity = lambda x: x
         normalize = transforms.Compose([
             transforms.ToTensor(),
+            gray2rgb_ifneeded if args.dataset in ['tiny_imagenet', 'oxford_pet'] else identity,
+            rgba2rgb_ifneeded if args.dataset in ['tiny_imagenet', 'oxford_pet'] else identity,
             transforms.Normalize(*constants.NORMALIZATION[dataset])
         ])
 
