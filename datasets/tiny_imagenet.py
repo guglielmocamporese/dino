@@ -19,7 +19,7 @@ class TinyImagenetDataset(Dataset):
     """
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         super(TinyImagenetDataset, self).__init__()
-        self.data_dir = root
+        self.data_dir = os.path.join(root, 'tiny_imagenet')
         self.train = train
         self.transform = transform
         self.target_transform = target_transform

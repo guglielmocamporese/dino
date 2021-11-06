@@ -27,6 +27,7 @@ from torchvision import models as torchvision_models
 import utils
 import vision_transformer as vits
 from datasets.dataloaders import get_datasets
+from datasets.transforms import get_transforms
 from datasets import constants
 
 
@@ -64,19 +65,22 @@ def eval_linear(args):
     linear_classifier = nn.parallel.DistributedDataParallel(linear_classifier, device_ids=[args.gpu])
 
     # ============ preparing data ... ============
-    gray2rgb_ifneeded = lambda x: x.repeat(3, 1, 1) if x.shape[0] == 1 else x
-    rgba2rgb_ifneeded = lambda x: x[:3] if x.shape[0] == 4 else x
-    identity = lambda x: x
-    val_transform = pth_transforms.Compose([
-        pth_transforms.Resize(256, interpolation=3),
-        pth_transforms.CenterCrop(224),
-        pth_transforms.ToTensor(),
-        gray2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
-        rgba2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
-        pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
-    ])
-    val_transform_dict = {'train': None, 'train_aug': None, 'validation': val_transform, 'test': None}
-    dataset_val = get_datasets(args, transform=val_transform_dict)['validation']
+    #gray2rgb_ifneeded = lambda x: x.repeat(3, 1, 1) if x.shape[0] == 1 else x
+    #rgba2rgb_ifneeded = lambda x: x[:3] if x.shape[0] == 4 else x
+    #gray2rgb_ifneeded_pil = lambda x: x.convert('RGB') if x.mode == 'L' else x
+    #rgba2rgb_ifneeded_pil = lambda x: x.convert('RGB') if x.mode == 'RGBA' else x
+    #identity = lambda x: x
+    #val_transform = pth_transforms.Compose([
+    #    gray2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+    #    rgba2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+    #    pth_transforms.Resize(256, interpolation=3),
+    #    pth_transforms.CenterCrop(224),
+    #    pth_transforms.ToTensor(),
+    #    pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset])
+    #])
+    transforms_dict, _ = get_transforms(args)
+    #val_transform_dict = {'train': None, 'train_aug': None, 'validation': val_transform, 'test': None}
+    dataset_val = get_datasets(args, transform=transforms_dict)['validation']
     val_loader = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=args.batch_size_per_gpu,
@@ -90,16 +94,16 @@ def eval_linear(args):
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         return
 
-    train_transform = pth_transforms.Compose([
-        pth_transforms.RandomResizedCrop(224),
-        pth_transforms.RandomHorizontalFlip(),
-        pth_transforms.ToTensor(),
-        gray2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
-        rgba2rgb_ifneeded if args.dataset == ['tiny_imagenet', 'oxford_pet'] else identity,
-        pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset]),
-    ])
-    train_transform_dict = {'train': train_transform, 'train_aug': None, 'validation': None, 'test': None}
-    dataset_train = get_datasets(args, transform=train_transform_dict)['train']
+    #train_transform = pth_transforms.Compose([
+    #    gray2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+    #    rgba2rgb_ifneeded_pil if args.dataset in ['oxford_pet', 'tiny_imagenet'] else identity,
+    #    pth_transforms.RandomResizedCrop(224),
+    #    pth_transforms.RandomHorizontalFlip(),
+    #    pth_transforms.ToTensor(),
+    #    pth_transforms.Normalize(*constants.NORMALIZATION[args.dataset]),
+    #])
+    #train_transform_dict = {'train': train_transform, 'train_aug': None, 'validation': None, 'test': None}
+    dataset_train = get_datasets(args, transform=transforms_dict)['train']
     sampler = torch.utils.data.distributed.DistributedSampler(dataset_train)
     train_loader = torch.utils.data.DataLoader(
         dataset_train,

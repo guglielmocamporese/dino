@@ -49,42 +49,41 @@ def gray2rgb_ifneeded(x):
 def rgba2rgb_ifneeded(x):
     return x[:3] if x.shape[0] > 3 else x
 
+def to_rgb_ifneeded(x):
+    return x.convert('RGB') if x.mode in ['L', 'RGBA'] else x
+
 def get_transforms(args):
     """
     Return the transformations for the datasets.
     """
-    if args.dataset in ['imagenet', 'caltech256', 'flower102', 'oxford_pet']:
+    if args.dataset in ['imagenet', 'flower102', 'oxford_pet']:
         trans = {
             'train_aug': transforms.Compose([
+                to_rgb_ifneeded,
                 transforms.RandomResizedCrop(224),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                gray2rgb_ifneeded,
-                rgba2rgb_ifneeded,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'train': transforms.Compose([
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop((224, 224)),
+                to_rgb_ifneeded,
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                gray2rgb_ifneeded,
-                rgba2rgb_ifneeded,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'validation': transforms.Compose([
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop((224, 224)),
+                to_rgb_ifneeded,
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                gray2rgb_ifneeded,
-                rgba2rgb_ifneeded,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'test': transforms.Compose([
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop((224, 224)),
+                to_rgb_ifneeded,
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
-                gray2rgb_ifneeded,
-                rgba2rgb_ifneeded,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
         }
@@ -98,29 +97,25 @@ def get_transforms(args):
     elif args.dataset in ['cifar10', 'cifar100', 'tiny_imagenet']:
         trans = {
             'train_aug': transforms.Compose([
-                transforms.RandomResizedCrop(224),
+                to_rgb_ifneeded,
+                transforms.RandomCrop(constants.IMG_SIZE[args.dataset], padding=4),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
-                gray2rgb_ifneeded,
-                rgba2rgb_ifneeded,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'train': transforms.Compose([
-                transforms.Resize((224, 224)),
+                to_rgb_ifneeded,
                 transforms.ToTensor(),
-                gray2rgb_ifneeded if args.dataset == 'tiny_imagenet' else lambda x: x,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'validation': transforms.Compose([
-                transforms.Resize((224, 224)),
+                to_rgb_ifneeded,
                 transforms.ToTensor(),
-                gray2rgb_ifneeded if args.dataset == 'tiny_imagenet' else lambda x: x,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
             'test': transforms.Compose([
-                transforms.Resize((224, 224)),
+                to_rgb_ifneeded,
                 transforms.ToTensor(),
-                gray2rgb_ifneeded if args.dataset == 'tiny_imagenet' else lambda x: x,
                 transforms.Normalize(*constants.NORMALIZATION[args.dataset])
             ]),
         }
