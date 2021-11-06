@@ -297,7 +297,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_path', default='./data', type=str)
     parser.add_argument('--num_workers', default=10, type=int, help='Number of data loading workers per GPU.')
     parser.add_argument('--val_freq', default=1, type=int, help="Epoch frequency for validation.")
-    parser.add_argument('--output_dir', default="./tmp", help='Path to save logs and checkpoints')
+    parser.add_argument('--output_dir', default="./tmp_v2", help='Path to save logs and checkpoints')
     parser.add_argument('--num_labels', default=10, type=int, help='Number of labels for linear classifier')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
     parser.add_argument('--dataset', type=str, help='Dataset used.', 
