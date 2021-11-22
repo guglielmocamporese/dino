@@ -129,7 +129,7 @@ def get_args_parser():
         distributed training; see https://pytorch.org/docs/stable/distributed.html""")
     parser.add_argument("--local_rank", default=0, type=int, help="Please ignore and do not set this argument.")
     parser.add_argument("--dataset", type=str, help="Dataset used.", 
-                        choices=["imagenet", "cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet"])
+                        choices=["imagenet", "cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet", "svhn"])
     return parser
 
 

@@ -10,6 +10,7 @@ NORMALIZATION = {
     'caltech256': [(0.5415, 0.5187, 0.4880), (0.3081, 0.3040, 0.3169)],
     'flower102': [(0.5115, 0.4159, 0.3407), (0.2957, 0.2493, 0.2889)],
     'oxford_pet': [(0.4830, 0.4448, 0.3956), (0.2591, 0.2531, 0.2596)],
+    'svhn': [(0.4378, 0.4439, 0.4729), (0.1981, 0.2011, 0.1970)],
 }
 NUM_CLASSES = {
     'imagenet': 1000,
@@ -18,6 +19,7 @@ NUM_CLASSES = {
     'tiny_imagenet': 200,
     'flower102': 102,
     'oxford_pet': 37,
+    'svhn': 10,
 }
 IMG_SIZE = {
     'imagenet': 224,
@@ -26,4 +28,5 @@ IMG_SIZE = {
     'tiny_imagenet': 64,
     'flower102': 224,
     'oxford_pet': 224,
+    'svhn': 32,
 }

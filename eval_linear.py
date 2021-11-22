@@ -301,7 +301,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_labels', default=10, type=int, help='Number of labels for linear classifier')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
     parser.add_argument('--dataset', type=str, help='Dataset used.', 
-                        choices=["cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet", "imagenet"])
+                        choices=["cifar10", "cifar100", "flower102", "tiny_imagenet", "oxford_pet", "imagenet", "svhn"])
     args = parser.parse_args()
     args.num_labels = constants.NUM_CLASSES[args.dataset]
     args.output_dir = os.path.join(args.output_dir, args.dataset)

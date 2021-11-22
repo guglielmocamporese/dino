@@ -94,7 +94,7 @@ def get_transforms(args):
             'test': None,   
         }
 
-    elif args.dataset in ['cifar10', 'cifar100', 'tiny_imagenet']:
+    elif args.dataset in ['cifar10', 'cifar100', 'tiny_imagenet', 'svhn']:
         trans = {
             'train_aug': transforms.Compose([
                 to_rgb_ifneeded,

@@ -2,7 +2,7 @@ import os
 import subprocess
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
-from torchvision.datasets import CIFAR10, CIFAR100
+from torchvision.datasets import CIFAR10, CIFAR100, SVHN
 import torch
 import math
 import torch.nn.functional as F
@@ -83,6 +83,12 @@ def get_datasets(args, transform='default', target_transform='default'):
         ds_train = OxfordPet(train=True, transform=transform['train'], target_transform=target_transform['train'], **ds_args)
         ds_train_aug = OxfordPet(train=True, transform=transform['train_aug'], target_transform=target_transform['train_aug'], **ds_args)
         ds_validation = OxfordPet(train=False, transform=transform['validation'], target_transform=target_transform['validation'], **ds_args)
+        ds_test = None
+
+    elif args.dataset == 'svhn':
+        ds_train = SVHN(split='train', transform=transform['train'], target_transform=target_transform['train'], **ds_args)
+        ds_train_aug = SVHN(split='train', transform=transform['train_aug'], target_transform=target_transform['train_aug'], **ds_args)
+        ds_validation = SVHN(split='test', transform=transform['validation'], target_transform=target_transform['validation'], **ds_args)
         ds_test = None
 
     else:
